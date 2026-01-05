@@ -1,0 +1,5 @@
+{
+  "name": "儿童白血病咨询助手 (SCCCG-AI)",
+  "description": "基于SCCCG-2025/2024最新协作方案及2026 MRD指南开发的专业临床咨询助手。提供iOS风格的视觉体验，涵盖AML、ALL、APL及CML的诊断标准、危险度分型及治疗建议。",
+  "requestFramePermissions": []
+}
