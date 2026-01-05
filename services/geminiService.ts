@@ -3,39 +3,46 @@ import { GoogleGenAI, Chat } from "@google/genai";
 import { SYSTEM_INSTRUCTION } from "../constants";
 
 export class GeminiService {
-  private ai: GoogleGenAI;
-  private chat: Chat;
+  private ai: GoogleGenAI | null = null;
+  private chat: Chat | null = null;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    this.chat = this.ai.chats.create({
-      model: 'gemini-3-pro-preview',
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.2, // Keep it precise for clinical data
-      },
-    });
-  }
-
-  async sendMessage(message: string) {
     try {
-      const response = await this.chat.sendMessage({ message });
-      return response.text || "抱歉，我暂时无法获取回复，请稍后再试。";
+      // 安全地获取 API Key
+      const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : '';
+      
+      if (!apiKey) {
+        console.warn("API_KEY is missing. GeminiService will not function correctly.");
+        return;
+      }
+
+      this.ai = new GoogleGenAI({ apiKey });
+      this.chat = this.ai.models.createChat({
+        model: 'gemini-3-pro-preview',
+        config: {
+          systemInstruction: SYSTEM_INSTRUCTION,
+          temperature: 0.2,
+        },
+      });
     } catch (error) {
-      console.error("Gemini API Error:", error);
-      return "连接助手时出现错误。请检查您的网络连接。";
+      console.error("Failed to initialize GeminiService:", error);
     }
   }
 
   async *sendMessageStream(message: string) {
+    if (!this.chat) {
+      yield "助手初始化失败，请检查 API 配置。";
+      return;
+    }
+
     try {
       const stream = await this.chat.sendMessageStream({ message });
       for await (const chunk of stream) {
         yield chunk.text;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Gemini Streaming Error:", error);
-      yield "流式传输过程中出现错误。";
+      yield `连接错误: ${error.message || '未知错误'}`;
     }
   }
 }
